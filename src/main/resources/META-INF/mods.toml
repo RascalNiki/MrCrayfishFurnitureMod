@@ -5,7 +5,7 @@ issueTrackerURL="https://github.com/MrCrayfish/MrCrayfishFurnitureMod/issues"
 
 [[mods]]
 modId="cfm"
-version="7.0.0-pre27"
+version="7.0.0-pre28"
 displayName="MrCrayfish's Furniture Mod"
 updateJSONURL="https://mrcrayfish.com/modupdatejson?id=cfm"
 displayURL="https://mrcrayfish.com/mods?id=cfm"
@@ -17,7 +17,7 @@ description="MrCrayfish's Furniture Mod is all about adding functioning furnitur
 [[dependencies.cfm]]
     modId="forge"
     mandatory=true
-    versionRange="[39,)"
+    versionRange="[39.0.45,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.cfm]]
