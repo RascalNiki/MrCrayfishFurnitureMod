@@ -6,7 +6,7 @@ import com.mrcrayfish.furniture.core.ModBlockEntities;
 import com.mrcrayfish.furniture.core.ModSounds;
 import com.mrcrayfish.furniture.event.FreezerFuelTimeEvent;
 import com.mrcrayfish.furniture.inventory.container.FreezerMenu;
-import com.mrcrayfish.furniture.item.crafting.ModRecipeType;
+import com.mrcrayfish.furniture.item.crafting.ModRecipeTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -31,6 +31,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.SidedInvWrapper;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -48,6 +53,8 @@ public class FreezerBlockEntity extends BasicLootBlockEntity
     private int fuelTimeTotal;
     private int freezeTime;
     private int freezeTimeTotal;
+
+    private LazyOptional<? extends IItemHandler>[] handlers = SidedInvWrapper.create(this, Direction.UP, Direction.DOWN, Direction.NORTH);
 
     protected final SimpleContainerData freezerData = new SimpleContainerData(4)
     {
@@ -116,7 +123,7 @@ public class FreezerBlockEntity extends BasicLootBlockEntity
         ItemStack fuelStack = blockEntity.items.get(1);
         if(blockEntity.isFreezing() || !fuelStack.isEmpty() && !blockEntity.items.get(0).isEmpty())
         {
-            Recipe<?> recipe = level.getRecipeManager().getRecipeFor(ModRecipeType.FREEZER_SOLIDIFY, blockEntity, level).orElse(null);
+            Recipe<?> recipe = level.getRecipeManager().getRecipeFor(ModRecipeTypes.FREEZER_SOLIDIFY, blockEntity, level).orElse(null);
             if(!blockEntity.isFreezing() && blockEntity.canFreeze(recipe))
             {
                 blockEntity.fuelTime = blockEntity.getFreezeTime(fuelStack);
@@ -277,7 +284,7 @@ public class FreezerBlockEntity extends BasicLootBlockEntity
 
     protected int getFreezeTime()
     {
-        return this.level.getRecipeManager().getRecipeFor(ModRecipeType.FREEZER_SOLIDIFY, this, this.level).map(AbstractCookingRecipe::getCookingTime).orElse(300);
+        return this.level.getRecipeManager().getRecipeFor(ModRecipeTypes.FREEZER_SOLIDIFY, this, this.level).map(AbstractCookingRecipe::getCookingTime).orElse(300);
     }
 
     @Override
@@ -455,5 +462,43 @@ public class FreezerBlockEntity extends BasicLootBlockEntity
         {
             level.setBlock(this.getBlockPos(), state.setValue(FreezerBlock.OPEN, open), 3);
         }
+    }
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction facing)
+    {
+        if(!this.remove && facing != null && capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
+        {
+            if(facing == Direction.UP)
+            {
+                return this.handlers[0].cast();
+            }
+            else if(facing == Direction.DOWN)
+            {
+                return this.handlers[1].cast();
+            }
+            else
+            {
+                return this.handlers[2].cast();
+            }
+        }
+        return super.getCapability(capability, facing);
+    }
+
+    @Override
+    public void invalidateCaps()
+    {
+        super.invalidateCaps();
+        for(LazyOptional<? extends IItemHandler> handler : this.handlers)
+        {
+            handler.invalidate();
+        }
+    }
+
+    @Override
+    public void reviveCaps()
+    {
+        super.reviveCaps();
+        this.handlers = SidedInvWrapper.create(this, Direction.UP, Direction.DOWN, Direction.NORTH);
     }
 }
